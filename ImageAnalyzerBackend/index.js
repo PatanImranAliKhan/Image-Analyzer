@@ -12,6 +12,10 @@ const coco_ssd = require("@tensorflow-models/coco-ssd");
 import ColorThief from 'colorthief'
 const colorThief = new ColorThief();
 
+const Canvas = require("canvas");
+const canvas = Canvas.createCanvas(200, 200)
+const getPath = require("path")
+
 
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -59,22 +63,34 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 });
 
 function getImageDimensions(path) {
-    console.log("path 2 : "+path);
+    console.log("path 2 : " + path);
     sizeOf(path, function (err, dimensions) {
-        if(err) {
-            console.log("Error dime: "+err);
+        if (err) {
+            console.log("Error dime: " + err);
         }
         console.log(dimensions.width, dimensions.height);
     });
 }
 
 function getDominantColour(path) {
-    /*var mopl = colorThief.getColor(path);
-    
-    console.log(mopl);*/
-    /*colorThief.getColor(path)
-        .then(color => { console.log("color: "+color) })
-        .catch(err => { console.log("color err : "+err) })*/
+    fs.readFile(path, (err, image) => {
+        if (err) {
+            console.log("Color error: " + err);
+            return;
+        }
+        console.log("read color");
+        var imageData = new Canvas.Image;
+        imageData.src = image
+        console.log("imagedata : " + imageData.width, imageData.height);
+        canvas.width = image.width;
+        canvas.height = image.height;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(imageData, 0, 0, 1, 1);
+        const i = ctx.getImageData(0, 0, 1, 1).data
+        console.log(`rgba(${i[0]},${i[1]},${i[2]},${i[3]})`);
+        console.log("#" + ((1 << 24) + (i[0] << 16) + (i[1] << 8) + i[2]).toString(16).slice(1));
+    })
+
 }
 
 
