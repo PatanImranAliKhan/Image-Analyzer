@@ -43,11 +43,21 @@ app.use(cors({
 /**
  * /upload URL to Analyze the Image
  */
-app.post("/upload", upload.single("file"), async (req, res) => {
+app.post("/upload", upload.single("file"), async (req, res, next) => {
     const path = req.file.path
-    getImageDimensions(path)
-
-    getDominantColour(path);
+    await getDominantColourAndImageDimensions(path)
+    .then((resp) => {
+        console.log("dim resp: "+JSON.stringify(resp))
+        if(resp['Status'] === "Error") {
+            res.send(resp);
+            next();
+        }
+    })
+    .catch((err) => {
+        console.log("Error in dominant color : "+err)
+    })
+    
+    
     try {
         const imageBuffer = fs.readFileSync(path);
         const b = Buffer.from(imageBuffer, "base64");
@@ -62,35 +72,53 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     }
 });
 
-function getImageDimensions(path) {
-    console.log("path 2 : " + path);
-    sizeOf(path, function (err, dimensions) {
-        if (err) {
-            console.log("Error dime: " + err);
-        }
-        console.log(dimensions.width, dimensions.height);
-    });
-}
-
-function getDominantColour(path) {
-    fs.readFile(path, (err, image) => {
-        if (err) {
-            console.log("Color error: " + err);
-            return;
-        }
-        console.log("read color");
-        var imageData = new Canvas.Image;
-        imageData.src = image
-        console.log("imagedata : " + imageData.width, imageData.height);
-        canvas.width = image.width;
-        canvas.height = image.height;
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(imageData, 0, 0, 1, 1);
-        const i = ctx.getImageData(0, 0, 1, 1).data
-        console.log(`rgba(${i[0]},${i[1]},${i[2]},${i[3]})`);
-        console.log("#" + ((1 << 24) + (i[0] << 16) + (i[1] << 8) + i[2]).toString(16).slice(1));
-    })
-
+async function getDominantColourAndImageDimensions(path) {
+    let resp = {
+        "Status": "Error",
+        "Message": "Expected image (BMP, JPEG, PNG, or GIF), but got unsupported image type" 
+    }
+    try {
+        fs.readFile(path, async (err, image) => {
+            if (err) {
+                console.log("readfile err: " + err);
+                console.log("end 1")
+                return resp;
+            }
+            console.log("read color");
+            var imageData = new Canvas.Image;
+            imageData.src = image
+            canvas.width = image.width;
+            canvas.height = image.height;
+            var ctx = await canvas.getContext('2d');
+            await ctx.drawImage(imageData, 0, 0, 1, 1);
+            const colordata = await ctx.getImageData(0, 0, 1, 1).data;
+            const rgbaColor = `rgba(${colordata[0]},${colordata[1]},${colordata[2]},${colordata[3]})`;
+            const hexColor = "#" + ((1 << 24) + (colordata[0] << 16) + (colordata[1] << 8) + colordata[2]).toString(16).slice(1);
+            console.log(rgbaColor, "  ", hexColor)
+            console.log("end 2")
+            resp = {
+                "Status": "Success",
+                "Message": {
+                    "Dimensions": {
+                        "width": imageData.width,
+                        "height": imageData.height
+                    },
+                    "DominantColor": {
+                        "rgba": rgbaColor,
+                        "hex": hexColor
+                    }
+                }
+            }
+            return resp;
+        })
+    } catch (err) {
+        console.log("end 3")
+        console.log("image colour: " + err);
+        resp = { "Error": "Expected image (BMP, JPEG, PNG, or GIF), but got unsupported image type" }
+    }
+    console.log("end 4");
+    console.log(resp)
+    return resp;
 }
 
 
