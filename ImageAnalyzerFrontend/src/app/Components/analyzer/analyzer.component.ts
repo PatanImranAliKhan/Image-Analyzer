@@ -39,6 +39,8 @@ export class AnalyzerComponent {
         .post('http://localhost:5000/upload', formData)
         .subscribe((resp) => {
           console.log(resp);
+        },(err) => {
+          console.log("Error")
         });
     }
   }

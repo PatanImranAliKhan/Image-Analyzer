@@ -14,7 +14,7 @@ const colorThief = new ColorThief();
 
 const Canvas = require("canvas");
 const canvas = Canvas.createCanvas(200, 200)
-const getPath = require("path")
+import Response from './Response.js';
 
 
 var storage = multer.diskStorage({
@@ -23,9 +23,7 @@ var storage = multer.diskStorage({
     },
     filename: function (req, file, cb) {
         const orgName = file.originalname.split(".");
-
-        console.log("file: " + orgName);
-        cb(null, orgName[0] + ".jpeg");
+        cb(null, file.originalname);
     }
 });
 
@@ -45,80 +43,65 @@ app.use(cors({
  */
 app.post("/upload", upload.single("file"), async (req, res, next) => {
     const path = req.file.path
-    await getDominantColourAndImageDimensions(path)
-    .then((resp) => {
-        console.log("dim resp: "+JSON.stringify(resp))
-        if(resp['Status'] === "Error") {
-            res.send(resp);
-            next();
-        }
-    })
-    .catch((err) => {
-        console.log("Error in dominant color : "+err)
-    })
-    
-    
+    getDominantColourAndImageDimensions(path)
+
     try {
         const imageBuffer = fs.readFileSync(path);
         const b = Buffer.from(imageBuffer, "base64");
         const tfimage = tf.node.decodeImage(b);
 
         const model = await coco_ssd.load();
-        const predictions = await model.detect(tfimage, 3, 0.25);
-        console.log("predictions: ", predictions);
-        res.json(predictions);
+        const predictions = await model.detect(tfimage, 4, 0.25);
+
+        if (predictions.length == 0) {
+            Response.setStatus = "Error";
+            Response.setMessage = "Cannot able to Predict, provide the right Image";
+            res.json(JSON.stringify(Response)).status(400);
+        }
+        Response.setPredictions = predictions[0].class;
+        res.json(JSON.stringify(Response)).status(200);
     } catch (err) {
+        Response.setStatus = "Error";
+        Response.setMessage = "Cannot able to Predict, provide the right Image";
         console.log("error: " + err);
+        res.json(JSON.stringify(Response)).status(400);
     }
 });
 
-async function getDominantColourAndImageDimensions(path) {
-    let resp = {
-        "Status": "Error",
-        "Message": "Expected image (BMP, JPEG, PNG, or GIF), but got unsupported image type" 
-    }
+function getDominantColourAndImageDimensions(path) {
     try {
         fs.readFile(path, async (err, image) => {
             if (err) {
-                console.log("readfile err: " + err);
-                console.log("end 1")
-                return resp;
+                Response.setStatus = "Error";
+                Response.setMessage = "Expected image (BMP, JPEG, PNG, or GIF), but got unsupported image type";
+                return;
             }
             console.log("read color");
             var imageData = new Canvas.Image;
             imageData.src = image
-            canvas.width = image.width;
-            canvas.height = image.height;
-            var ctx = await canvas.getContext('2d');
-            await ctx.drawImage(imageData, 0, 0, 1, 1);
-            const colordata = await ctx.getImageData(0, 0, 1, 1).data;
+            canvas.width = image.width, canvas.height = image.height;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(imageData, 0, 0, 1, 1);
+            const colordata = ctx.getImageData(0, 0, 1, 1).data;
             const rgbaColor = `rgba(${colordata[0]},${colordata[1]},${colordata[2]},${colordata[3]})`;
             const hexColor = "#" + ((1 << 24) + (colordata[0] << 16) + (colordata[1] << 8) + colordata[2]).toString(16).slice(1);
-            console.log(rgbaColor, "  ", hexColor)
-            console.log("end 2")
-            resp = {
-                "Status": "Success",
-                "Message": {
-                    "Dimensions": {
-                        "width": imageData.width,
-                        "height": imageData.height
-                    },
-                    "DominantColor": {
-                        "rgba": rgbaColor,
-                        "hex": hexColor
-                    }
-                }
+            const Dimensions = {
+                "width": imageData.width,
+                "height": imageData.height
             }
-            return resp;
+            const DominantColor = {
+                "rgba": rgbaColor,
+                "hex": hexColor
+            }
+            Response.setStatus = "Success";
+            Response.setMessage = "Success";
+            Response.setDimensions = Dimensions;
+            Response.setDominantColor = DominantColor;
         })
     } catch (err) {
-        console.log("end 3")
-        console.log("image colour: " + err);
-        resp = { "Error": "Expected image (BMP, JPEG, PNG, or GIF), but got unsupported image type" }
+        Response.setStatus = "Error";
+        Response.setMessage = "Expected image (BMP, JPEG, PNG, or GIF), but got unsupported image type";
     }
-    console.log("end 4");
-    console.log(resp)
-    return resp;
 }
 
 
