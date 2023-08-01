@@ -3,18 +3,26 @@
         <h1>Image Analyzer</h1>
     </div>
     <div style="display: block;">
-        <div >
-            <div class="card h-100">
+        <div>
+            <div class="card">
                 <div class="card-header">
                     <h3>Upload Image</h3>
                 </div>
                 <div class="uploadinput">
-                    <input class="btn btn-warning" (change)="ImageChange($event)" type="file" accept="image/gif, image/jpeg, image/png">
+                    <input class="btn btn-warning" (change)="ImageChange($event)" type="file"
+                        accept="image/gif, image/jpeg, image/png">
                 </div>
                 <div class="card-image">
                     &nbsp;
                     <div *ngIf="imageURL">
                         <img [src]="imageURL" width="100%" height="50%" />
+                    </div>
+                    <div *ngIf="loading" class="sk-wave">
+                        <div class="sk-wave-rect"></div>
+                        <div class="sk-wave-rect"></div>
+                        <div class="sk-wave-rect"></div>
+                        <div class="sk-wave-rect"></div>
+                        <div class="sk-wave-rect"></div>
                     </div>
                 </div>
                 <div class="analyze-button">
@@ -22,34 +30,58 @@
                 </div>
             </div>
         </div>
-        <br/>
-        <br/>
-        <div *ngIf="receiveResult" >
-            <div class="card h-100" *ngIf="Response.Dimensions.width" id="result">
+        <br />
+        <br />
+        <div *ngIf="receiveResult" #scrollMe>
+            <div class="card" *ngIf="Response.Dimensions.width" id="result">
                 <div class="card-header">
                     <h3>Analyzer Result</h3>
                 </div>
-                <div class="row">
-                    <b class="col">Dimensions: </b>
-                    <div class="col" style="display: block;">
-                        <p><b>Width : </b> {{Response.Dimensions.width}}</p>
-                        <p><b>Height : </b> {{Response.Dimensions.height}}</p>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <col>
+                        <colgroup span="2"></colgroup>
+                        <tbody>
+                            <tr>
+                                <th scope="rowgroup" rowspan="2">Dimensions</th>
+                                <th scope="row">Width</th>
+                                <td>{{Response.Dimensions.width}} px</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Height</th>
+                                <td>{{Response.Dimensions.height}} px</td>
+                            </tr>
+                        </tbody>
+                        <tbody *ngIf="Response.DominantColor.rgba">
+                            <tr>
+                                <th scope="rowgroup" rowspan="3">Dominant Color</th>
+                                <th scope="row">RGBA value</th>
+                                <td> {{Response.DominantColor.rgba}}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">HEX value</th>
+                                <td> {{Response.DominantColor.hex}}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Color</th>
+                                <td>
+                                    <div class="colorDisplay"
+                                        [ngStyle]="{'background-color': Response.DominantColor.hex}">
+                                        &nbsp;
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tbody *ngIf="Response.Prediction">
+                            <tr>
+                                <th>Prediction</th>
+                                <th>Image</th>
+                                <td>{{Response.Prediction | uppercase}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="row" *ngIf="Response.Dimensions.width">
-                    <b class="col">Dominant Colour: </b>
-                    <div class="col">
-                        <p><b>RGBA : </b> {{Response.Dimensions.width}}</p>
-                        <p><b>HEX : </b> {{Response.Dimensions.height}}</p>
-                    </div>
-                </div>
-                <div class="row" *ngIf="Response.Prediction">
-                    <b class="col">Predicted Image of: </b>
-                    <div class="col">
-                        <p>{{Response.Prediction}}</p>
-                    </div>
-                </div>
-            </div> 
+            </div>
         </div>
     </div>
 </div>

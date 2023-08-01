@@ -5,7 +5,7 @@
 .title {
     color: #fff;
     text-align: center;
-    margin-bottom: 50px;
+    margin-bottom: 25px;
 }
 
 .card {
@@ -20,12 +20,17 @@
 
 .card-image {
     margin: auto;
-    margin-bottom: 25px;
+    margin-bottom: 5px;
+}
+
+img {
+    max-height: 300px;
+    border-radius: 5px;
 }
 
 .uploadinput {
     margin: auto;
-    padding: 10px 5px;
+    padding: 5px 5px;
     display: inline-block;
 }
 
@@ -49,7 +54,18 @@ input[type="file"] {
     margin: auto;
 }
 
-@media only screen and (max-width: 768px) {
+.sk-wave {
+    width: 75px;
+    margin: auto;
+}
+
+.colorDisplay {
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+}
+
+@media only screen and (max-width: 992px) {
     .card {
         width: 80%;
     }
