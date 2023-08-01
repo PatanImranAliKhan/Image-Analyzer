@@ -43,8 +43,8 @@ app.use(cors({
  */
 app.post("/upload", upload.single("file"), async (req, res, next) => {
     const path = req.file.path
-    getDominantColourAndImageDimensions(path)
-
+    console.log(path);
+    getDominantColourAndImageDimensions(path);
     try {
         const imageBuffer = fs.readFileSync(path);
         const b = Buffer.from(imageBuffer, "base64");
@@ -54,17 +54,23 @@ app.post("/upload", upload.single("file"), async (req, res, next) => {
         const predictions = await model.detect(tfimage, 4, 0.25);
 
         if (predictions.length == 0) {
-            Response.setStatus = "Error";
-            Response.setMessage = "Cannot able to Predict, provide the right Image";
-            res.json(JSON.stringify(Response)).status(400);
+            if (Response.getDimensions != {}) {
+                Response.Status = "Prediction Error";
+            }
+            Response.setMessage = "Cannot able to Predict, provide the Image in Right Format";
+            return res.json(JSON.stringify(Response)).status(400);
         }
         Response.setPredictions = predictions[0].class;
         res.json(JSON.stringify(Response)).status(200);
     } catch (err) {
-        Response.setStatus = "Error";
-        Response.setMessage = "Cannot able to Predict, provide the right Image";
+        console.log(JSON.stringify(Response))
+        if (Response.getDimensions != {}) {
+            Response.Status = "Prediction Error";
+        }
+        Response.setMessage = "Cannot able to Predict, provide the Image in Right Format";
+        Response.Prediction = ""
         console.log("error: " + err);
-        res.json(JSON.stringify(Response)).status(400);
+        return res.json(JSON.stringify(Response)).status(400);
     }
 });
 
@@ -72,38 +78,46 @@ function getDominantColourAndImageDimensions(path) {
     try {
         fs.readFile(path, async (err, image) => {
             if (err) {
-                Response.setStatus = "Error";
-                Response.setMessage = "Expected image (BMP, JPEG, PNG, or GIF), but got unsupported image type";
+                setError();
                 return;
             }
-            console.log("read color");
             var imageData = new Canvas.Image;
             imageData.src = image
             canvas.width = image.width, canvas.height = image.height;
-            var ctx = canvas.getContext('2d');
-            ctx.drawImage(imageData, 0, 0, 1, 1);
-            const colordata = ctx.getImageData(0, 0, 1, 1).data;
-            const rgbaColor = `rgba(${colordata[0]},${colordata[1]},${colordata[2]},${colordata[3]})`;
-            const hexColor = "#" + ((1 << 24) + (colordata[0] << 16) + (colordata[1] << 8) + colordata[2]).toString(16).slice(1);
-            const Dimensions = {
-                "width": imageData.width,
-                "height": imageData.height
+            try {
+                var ctx = await canvas.getContext('2d');
+                await ctx.drawImage(imageData, 0, 0, 1, 1);
+                const colordata = ctx.getImageData(0, 0, 1, 1).data;
+                const rgbaColor = `rgba(${colordata[0]},${colordata[1]},${colordata[2]},${colordata[3]})`;
+                const hexColor = "#" + ((1 << 24) + (colordata[0] << 16) + (colordata[1] << 8) + colordata[2]).toString(16).slice(1);
+                const Dimensions = {
+                    "width": imageData.width,
+                    "height": imageData.height
+                }
+                const DominantColor = {
+                    "rgba": rgbaColor,
+                    "hex": hexColor
+                }
+                Response.setStatus = "Success";
+                Response.setMessage = "Success";
+                Response.setDimensions = Dimensions;
+                Response.setDominantColor = DominantColor;
+            } catch (Err) {
+                setError();
             }
-            const DominantColor = {
-                "rgba": rgbaColor,
-                "hex": hexColor
-            }
-            Response.setStatus = "Success";
-            Response.setMessage = "Success";
-            Response.setDimensions = Dimensions;
-            Response.setDominantColor = DominantColor;
         })
     } catch (err) {
-        Response.setStatus = "Error";
-        Response.setMessage = "Expected image (BMP, JPEG, PNG, or GIF), but got unsupported image type";
+        setError();
     }
 }
 
+function setError() {
+    Response.setStatus = "Error";
+    Response.setMessage = "Expected image (BMP, JPEG, PNG, or GIF), but got unsupported image type";
+    Response.Dimensions = {};
+    Response.DominantColor = {};
+    Response.Prediction = ""
+}
 
 /**
  * listen to PORT 5000

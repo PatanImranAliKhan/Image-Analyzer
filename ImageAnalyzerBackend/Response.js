@@ -1,5 +1,5 @@
 const Response = {
-    Status: "Failed",
+    Status: "Error",
     Message: "",
     Dimensions: {},
     DominantColor: {},
@@ -23,6 +23,14 @@ const Response = {
 
     set setPredictions(pred) {
         this.Prediction = pred;
+    },
+
+    get getDimensions() {
+        return this.Dimensions
+    },
+
+    get getDominantColor() {
+        return this.DominantColor
     }
 
 }

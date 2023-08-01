@@ -9,6 +9,8 @@ import { HttpClient } from '@angular/common/http';
 export class AnalyzerComponent {
   public imageURL: any = '';
   public imageFile: any;
+  public Response: any;
+  public receiveResult = false;
 
   constructor(private http: HttpClient) {}
 
@@ -37,10 +39,25 @@ export class AnalyzerComponent {
       
       this.http
         .post('http://localhost:5000/upload', formData)
-        .subscribe((resp) => {
-          console.log(resp);
+        .subscribe((resp: any) => {
+          this.Response = JSON.parse(resp);
+          console.log(this.Response);
+          
+          if(this.Response.Status=="Error") {
+            this.receiveResult = false;
+            alert(this.Response.Message)
+            this.Response={};
+          } else if(this.Response.Status=="Prediction Error") {
+            this.receiveResult = true;
+            alert(this.Response.Message)
+          } else {
+            this.receiveResult = true;
+          }
         },(err) => {
-          console.log("Error")
+          this.receiveResult = false;
+          console.log("Error");
+          this.Response = "";
+          alert("")
         });
     }
   }

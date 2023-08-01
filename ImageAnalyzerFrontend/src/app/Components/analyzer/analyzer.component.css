@@ -40,6 +40,14 @@ input[type="file"] {
     margin-left: 10%;
 } 
 
+.displaycards {
+    display: flex;
+}
+
+#result .row {
+    width: 80%;
+    margin: auto;
+}
 
 @media only screen and (max-width: 768px) {
     .card {
