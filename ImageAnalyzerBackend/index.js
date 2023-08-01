@@ -5,17 +5,13 @@ const multer = require("multer");
 const cors = require("cors");
 var fs = require('fs')
 
-var sizeOf = require('image-size');
+import path from 'path';
 import * as tf from "@tensorflow/tfjs-node";
 const coco_ssd = require("@tensorflow-models/coco-ssd");
-
-import ColorThief from 'colorthief'
-const colorThief = new ColorThief();
 
 const Canvas = require("canvas");
 const canvas = Canvas.createCanvas(200, 200)
 import Response from './Response.js';
-
 
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -33,20 +29,20 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(cors({
-    origin: 'http://localhost:4200'
+    origin: '*'
 }));
+const __dirname = path.resolve();
+app.use(express.static(path.join(__dirname, 'image-analyzer-frontend')))
 
 /**
- * /upload URL to Analyze the Image
+ * /api/upload URL to Analyze the Image
  */
-app.post("/upload", upload.single("file"), async (req, res, next) => {
-    const path = req.file.path
-    console.log(path);
-    getDominantColourAndImageDimensions(path);
+app.post("/api/upload", upload.single("file"), async (req, res, next) => {
+    const filePath = req.file.path
+    getDominantColourAndImageDimensions(filePath);
     try {
-        const imageBuffer = fs.readFileSync(path);
+        const imageBuffer = fs.readFileSync(filePath);
         const b = Buffer.from(imageBuffer, "base64");
         const tfimage = tf.node.decodeImage(b);
 
@@ -63,20 +59,22 @@ app.post("/upload", upload.single("file"), async (req, res, next) => {
         Response.setPredictions = predictions[0].class;
         res.json(JSON.stringify(Response)).status(200);
     } catch (err) {
-        console.log(JSON.stringify(Response))
         if (Response.getDimensions != {}) {
             Response.Status = "Prediction Error";
         }
         Response.setMessage = "Cannot able to Predict, provide the Image in Right Format";
         Response.Prediction = ""
-        console.log("error: " + err);
         return res.json(JSON.stringify(Response)).status(400);
     }
 });
 
-function getDominantColourAndImageDimensions(path) {
+app.use('/*', function(req,res) {
+    res.sendFile(path.join(__dirname, 'image-analyzer-frontend/index.html'))
+})
+
+function getDominantColourAndImageDimensions(filePath) {
     try {
-        fs.readFile(path, async (err, image) => {
+        fs.readFile(filePath, async (err, image) => {
             if (err) {
                 setError();
                 return;

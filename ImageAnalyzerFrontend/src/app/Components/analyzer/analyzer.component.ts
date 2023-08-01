@@ -10,7 +10,7 @@ export class AnalyzerComponent implements OnInit {
   public imageURL: any = '';
   public imageFile: any;
   public Response: any;
-  public receiveResult = false;
+  public receivedResult = false;
   public loading: boolean = false;
 
   constructor(private http: HttpClient) { }
@@ -32,6 +32,8 @@ export class AnalyzerComponent implements OnInit {
       reader.onload = (e) => {
         this.imageURL = e.target?.result;
       };
+      this.Response = {};
+      this.receivedResult = false;
     }
   }
 
@@ -42,13 +44,13 @@ export class AnalyzerComponent implements OnInit {
       formData.append("file", this.imageFile, this.imageFile.name);
 
       this.http
-        .post('http://localhost:5000/upload', formData)
+        .post('/api/upload', formData)
         .subscribe((resp: any) => {
           this.Response = JSON.parse(resp);
           this.AnalyzeResult();
         }, (err) => {
           this.loading = false;
-          this.receiveResult = false;
+          this.receivedResult = false;
           this.Response = "";
           alert("Error in Processing the request")
         });
@@ -56,18 +58,17 @@ export class AnalyzerComponent implements OnInit {
   }
 
   AnalyzeResult() {
-    console.log(this.Response);
     switch (this.Response.Status) {
       case "Error":
-        this.receiveResult = false;
+        this.receivedResult = false;
         alert(this.Response.Message)
         break;
       case "Prediction Error":
-        this.receiveResult = true;
+        this.receivedResult = true;
         alert(this.Response.Message);
         break;
       default:
-        this.receiveResult = true;
+        this.receivedResult = true;
     }
     this.loading = false;
     this.scrollToBottom();
@@ -84,8 +85,6 @@ export class AnalyzerComponent implements OnInit {
           });
         }
       }, 1000);
-    } catch (err) {
-      console.log("scrolll error: " + err)
-    }
+    } catch (err) {}
   }
 }
