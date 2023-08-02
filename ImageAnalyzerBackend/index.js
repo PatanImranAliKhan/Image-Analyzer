@@ -4,6 +4,7 @@ const express = require("express");
 const multer = require("multer");
 const cors = require("cors");
 var fs = require('fs')
+const process = require("process")
 
 import path from 'path';
 import * as tf from "@tensorflow/tfjs-node";
@@ -120,7 +121,7 @@ function setError() {
 /**
  * listen to PORT 5000
  */
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server started on port : ${PORT}`);
 });
